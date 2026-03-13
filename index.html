@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Nilai Pensiun</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --hint: #94a3b8;
+      --surface: #f8fafc;
+      --danger-bg: #fef2f2;
+      --danger: #dc2626;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 20px;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px 60px;
+      color: var(--text);
+    }
+    .container { width: 100%; max-width: 480px; }
+
+    /* Header */
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .page-sub { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* Form card */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 24px; margin-bottom: 12px;
+    }
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+    .field > label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    input, select {
+      width: 100%; padding: 13px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-family: 'Inter', sans-serif;
+      font-size: 15px; font-weight: 500; color: var(--text);
+      transition: border-color .15s, box-shadow .15s; appearance: none;
+    }
+    input:focus, select:focus {
+      outline: none; border-color: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148,163,184,.15); background: #fff;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .custom-area { display: none; margin-top: 10px; }
+    .custom-area label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+
+    .btn {
+      width: 100%; padding: 15px;
+      background: var(--text); color: #fff; border: none;
+      border-radius: var(--r-md); font-family: 'Inter', sans-serif;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: opacity .15s, transform .1s; margin-bottom: 28px;
+    }
+    .btn:hover:not(:disabled) { opacity: .85; transform: translateY(-1px); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── RESULTS ── */
+    .results { display: none; }
+
+    /* Hero answer */
+    .hero {
+      background: var(--text); color: #fff;
+      border-radius: var(--r-lg); padding: 28px 24px; margin-bottom: 12px;
+      text-align: center;
+    }
+    .hero-question { font-size: 13px; color: rgba(255,255,255,.55); margin-bottom: 16px; }
+    .hero-nominal { font-size: 15px; color: rgba(255,255,255,.7); margin-bottom: 4px; }
+    .hero-arrow { font-size: 13px; color: rgba(255,255,255,.35); margin: 6px 0; }
+    .hero-value { font-size: 38px; font-weight: 700; color: #fff; line-height: 1.1; margin-bottom: 8px; }
+    .hero-desc { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.6; }
+    .hero-loss {
+      display: inline-block; margin-top: 14px;
+      background: rgba(239,68,68,.2); color: #fca5a5;
+      font-size: 13px; font-weight: 600; padding: 5px 14px;
+      border-radius: 20px;
+    }
+
+    /* Context cards */
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--hint); margin-bottom: 10px;
+    }
+    .ctx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .ctx-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 16px 14px;
+      position: relative; overflow: hidden;
+    }
+    .ctx-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px; border-radius: 4px 0 0 4px;
+    }
+    .ctx-card.gold::before { background: #d97706; }
+    .ctx-card.rice::before { background: #16a34a; }
+    .ctx-card.fuel::before { background: #2563eb; }
+    .ctx-card.umr::before { background: #7c3aed; }
+
+    .ctx-label { font-size: 11px; color: var(--hint); margin-bottom: 10px; padding-left: 2px; }
+    .ctx-compare { display: flex; flex-direction: column; gap: 4px; padding-left: 2px; }
+    .ctx-now { font-size: 13px; color: var(--muted); }
+    .ctx-now span { font-weight: 600; color: var(--text); }
+    .ctx-then { font-size: 13px; color: var(--muted); }
+    .ctx-then span { font-weight: 600; color: var(--danger); }
+    .ctx-divider { width: 100%; height: 1px; background: var(--border); margin: 6px 0; }
+
+    /* Footer note */
+    .note { font-size: 11px; color: var(--hint); line-height: 1.7; padding: 0 2px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <h1 class="page-title">Simulasi nilai pensiun</h1>
+    <p class="page-sub">Masukkan nominal pensiun dan tahun target — lihat berapa nilainya dalam mata uang hari ini.</p>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>Nominal pensiun per bulan (Rp)</label>
+      <input type="number" id="nominal" placeholder="5.000.000">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Tahun mulai</label>
+        <input type="number" id="tAwal" placeholder="2026">
+      </div>
+      <div class="field">
+        <label>Tahun pensiun</label>
+        <input type="number" id="tAkhir" placeholder="2055">
+      </div>
+    </div>
+    <div class="field">
+      <label>Asumsi inflasi tahunan</label>
+      <select id="inflasiOpt" onchange="toggleCustom()">
+        <option value="0.03">Rendah — 3%/thn (optimis)</option>
+        <option value="0.04" selected>Moderat — 4%/thn (historis BI)</option>
+        <option value="0.06">Tinggi — 6%/thn (pesimis)</option>
+        <option value="custom">Atur sendiri...</option>
+      </select>
+      <div class="custom-area" id="customArea">
+        <label>Nilai inflasi (%/tahun)</label>
+        <input type="number" id="inflasiCustom" placeholder="cth: 5">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="btnHitung" onclick="hitung()">Hitung sekarang</button>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-question">Nilai uang pensiun Anda di tahun <span id="h-tahun">-</span></div>
+      <div class="hero-nominal" id="h-nominal">-</div>
+      <div class="hero-arrow">▼ setelah inflasi <span id="h-inf">-</span> selama <span id="h-dur">-</span> tahun</div>
+      <div class="hero-value" id="h-value">-</div>
+      <div class="hero-desc">dalam nilai uang <span id="h-tahun2">-</span></div>
+      <div class="hero-loss" id="h-loss">-</div>
+    </div>
+
+    <!-- Pembanding kontekstual -->
+    <p class="section-label">Perbandingan daya beli</p>
+    <div class="ctx-grid">
+
+      <div class="ctx-card gold">
+        <div class="ctx-label">Emas Antam</div>
+        <div class="ctx-compare">
+          <div class="ctx-now">Sekarang: <span id="cx-gold-now">-</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-then">Tahun <span id="cx-gold-yr">-</span>: <span id="cx-gold-then">-</span></div>
+        </div>
+      </div>
+
+      <div class="ctx-card rice">
+        <div class="ctx-label">Beras medium</div>
+        <div class="ctx-compare">
+          <div class="ctx-now">Sekarang: <span id="cx-rice-now">-</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-then">Tahun <span id="cx-rice-yr">-</span>: <span id="cx-rice-then">-</span></div>
+        </div>
+      </div>
+
+      <div class="ctx-card fuel">
+        <div class="ctx-label">Pertalite</div>
+        <div class="ctx-compare">
+          <div class="ctx-now">Sekarang: <span id="cx-fuel-now">-</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-then">Tahun <span id="cx-fuel-yr">-</span>: <span id="cx-fuel-then">-</span></div>
+        </div>
+      </div>
+
+      <div class="ctx-card umr">
+        <div class="ctx-label">UMR Semarang</div>
+        <div class="ctx-compare">
+          <div class="ctx-now">Sekarang: <span id="cx-umr-now">-</span></div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-then">Tahun <span id="cx-umr-yr">-</span>: <span id="cx-umr-then">-</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="note" id="noteEl"></p>
+  </div>
+
+</div>
+<script>
+  // ── Referensi harga saat ini ──
+  var HEMAS      = 3179000;   // Rp/gram, Antam 13 Mar 2026
+  var HBERAS     = 15000;     // Rp/kg
+  var HBBM       = 10000;     // Rp/liter Pertalite
+  var UMR        = 3240000;   // UMR Semarang 2026
+
+  // CAGR emas historis Antam IDR (dipakai internal, tidak ditampilkan)
+  // Konservatif: 2005–2026 = 10.2%, Moderat: 2010–2026 = 11.1%, Agresif: 2015–2026 = 16.5%
+  // Pakai moderat sebagai default proyeksi harga emas di tahun target
+  var EMAS_CAGR  = 0.111;
+
+  var HEMAS_TGL  = '13 Maret 2026';
+
+  function fmt(n) {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency', currency: 'IDR', maximumFractionDigits: 0
+    }).format(n);
+  }
+
+  function toggleCustom() {
+    document.getElementById('customArea').style.display =
+      document.getElementById('inflasiOpt').value === 'custom' ? 'block' : 'none';
+  }
+
+  // Fetch harga emas live dari proxy — silent, tidak ada UI loading
+  async function fetchGold() {
+    try {
+      var res  = await fetch('/api/gold');
+      var data = await res.json();
+      if (data.harga_per_gram) {
+        HEMAS     = data.harga_per_gram;
+        HEMAS_TGL = data.tanggal;
+      }
+      // Ambil CAGR moderat dari proxy jika tersedia
+      if (data.cagr && data.cagr.n16) EMAS_CAGR = data.cagr.n16;
+    } catch (e) { /* fallback ke nilai hardcode di atas */ }
+  }
+
+  function hitung() {
+    var nom = parseFloat(document.getElementById('nominal').value);
+    var tA  = parseInt(document.getElementById('tAwal').value);
+    var tB  = parseInt(document.getElementById('tAkhir').value);
+    var opt = document.getElementById('inflasiOpt').value;
+    var inf;
+    if (opt === 'custom') {
+      var cv = parseFloat(document.getElementById('inflasiCustom').value);
+      if (!cv) { alert('Masukkan angka inflasi.'); return; }
+      inf = cv / 100;
+    } else { inf = parseFloat(opt); }
+
+    if (!nom || !tA || !tB)   { alert('Lengkapi semua data.'); return; }
+    if (tB <= tA)              { alert('Tahun pensiun harus lebih besar dari tahun mulai.'); return; }
+    if (tA < 2000 || tB > 2100) { alert('Masukkan tahun yang masuk akal (2000–2100).'); return; }
+
+    var years   = tB - tA;
+
+    // ── Daya beli riil ──
+    var realVal = nom / Math.pow(1 + inf, years);
+    var susut   = (realVal - nom) / nom * 100; // negatif
+
+    // ── Proyeksi harga emas di tahun target (kalkulasi internal) ──
+    var hEmasFut = HEMAS * Math.pow(1 + EMAS_CAGR, years);
+
+    // ── Daya beli kontekstual: berapa unit yang bisa dibeli dengan nominal yang sama ──
+    // Sekarang vs tahun target (menggunakan realVal karena daya beli sudah menyusut)
+    var goldNow   = nom    / HEMAS;
+    var goldThen  = realVal / hEmasFut;   // nominal flat tapi harga emas naik
+    var riceNow   = nom    / HBERAS;
+    var riceThen  = realVal / HBERAS;     // harga beras ikut inflasi → pakai realVal
+    var fuelNow   = nom    / HBBM;
+    var fuelThen  = realVal / HBBM;
+    var umrNow    = nom    / UMR;
+    var umrThen   = realVal / UMR;
+
+    // ── Hero ──
+    document.getElementById('h-tahun').textContent  = tB;
+    document.getElementById('h-tahun2').textContent = tA;
+    document.getElementById('h-nominal').textContent = fmt(nom) + ' / bulan';
+    document.getElementById('h-inf').textContent    = (inf * 100).toFixed(0) + '%';
+    document.getElementById('h-dur').textContent    = years;
+    document.getElementById('h-value').textContent  = fmt(realVal);
+    document.getElementById('h-loss').textContent   =
+      'Kehilangan ' + Math.abs(susut).toFixed(1) + '% daya beli';
+
+    // ── Konteks ──
+    var yr = tB;
+    ['gold','rice','fuel','umr'].forEach(function(k) {
+      document.getElementById('cx-' + k + '-yr').textContent = yr;
+    });
+
+    document.getElementById('cx-gold-now').textContent  = goldNow.toFixed(2)  + ' gram';
+    document.getElementById('cx-gold-then').textContent = goldThen.toFixed(2) + ' gram';
+    document.getElementById('cx-rice-now').textContent  = Math.round(riceNow)  + ' kg';
+    document.getElementById('cx-rice-then').textContent = Math.round(riceThen) + ' kg';
+    document.getElementById('cx-fuel-now').textContent  = Math.round(fuelNow)  + ' liter';
+    document.getElementById('cx-fuel-then').textContent = Math.round(fuelThen) + ' liter';
+    document.getElementById('cx-umr-now').textContent   = umrNow.toFixed(2)   + '× UMR';
+    document.getElementById('cx-umr-then').textContent  = umrThen.toFixed(2)  + '× UMR';
+
+    // ── Catatan kaki ──
+    document.getElementById('noteEl').textContent =
+      'Harga referensi per ' + HEMAS_TGL + ': emas Antam ' + fmt(HEMAS) + '/gram, ' +
+      'beras Rp 15.000/kg, Pertalite Rp 10.000/liter, UMR Semarang Rp 3.240.000. ' +
+      'Konteks emas memproyeksikan harga berdasarkan CAGR historis Antam (IDR). ' +
+      'Semua perbandingan menggunakan daya beli riil setelah inflasi.';
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  fetchGold(); // silent background fetch
+</script>
+</body>
+</html>
